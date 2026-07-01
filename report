@@ -1,0 +1,20 @@
+PXR-Challenge, activity track report
+1. Dataset Curation and Quality Control
+The initial dataset combined results from three experiments: primary dose-response, single-concentration, and counter-assays. To merge these sources accurately, all compound names were first standardized. Any records missing a valid chemical structure (SMILES) or a tested activity value pEC50 were removed.
+To ensure the models were trained on reliable and specific modulators, a three-step biological filter was applied:
+•	Efficacy: Compounds with a maximum response Emax below 1.0 were discarded to exclude inactive or weak agents.
+•	Reliability: Molecules with a False Discovery Rate (FDR) ≥ 0.05 in the single-concentration assay were removed.
+•	Specificity: To prevent off-target effects, compounds showing significant activity in the counter-assay pEC50 ≥ 5.0 were also excluded.
+Finally, to handle duplicated molecules, replicate measurements were sorted by their experimental standard error. Only the most precise data point (the one with the lowest error) was kept for each compound. The cleaned dataset was then reduced to the essential columns needed for modeling: Molecule Name, SMILES, and pEC50.
+2. Dataset Preparation and Molecular representation
+The dataset, comprising chemical structures encoded as Simplified Molecular Input Line Entry System (SMILES) strings and their corresponding empirical pEC50 values, was randomly partitioned into a training set (80%) and an external hold-out test set (20%). Based on the different used algorithms, the SMILES strings were converted into two distinct molecular representations. For classical machine learning models, molecules were featured into 2048-bit Morgan fingerprints (radius = 2) utilizing the RDKit library. For deep learning architectures, chemical structures were translated into molecular graphs, where nodes represent atoms and edges represent bonds.
+3. Predictive Modeling Architectures
+Five different algorithms were used: two Machine Learning and three Deep Learning. Two classical ensemble methods were implemented and trained on the Morgan fingerprints: Random Forest (RF) and eXtreme Gradient Boosting (XGBoost). Those three Deep Learning architectures, trained on the molecular graphs, are: 
+1) Chemprop, based on the Directed Message Passing Neural Network (D-MPNN).
+2) AttentiveFP, a GNN leveraging graph attention mechanisms to weight molecular substructures relevant to biological activity.
+3) Graph Isomorphism Network (GIN), designed to maximize the discriminative power between topologically similar molecular graphs.
+
+3.1. Hyperparameter Optimization and Training Protocol
+Hyperparameter tuning was carried out in order to find the best combination of parameters to optimize model based on the pEC50. Tuning was systematically performed for all five architectures using the Optuna framework. The optimization objective was defined as the minimization of the Root Mean Square Error (RMSE) on the validation data. To enhance computational efficiency during the hyperparameter search space exploration, the MedianPruner algorithm was employed to enforce early stopping of unpromising training trials. 
+4. Model Evaluation and Consensus Virtual Screening
+The predictive performance of each optimized model was quantitatively assessed on the unseen external test set using two primary statistical metrics: The Root Mean Square Error (RMSE) and the coefficient of determination (R2) Finally, the fully trained and optimized models were deployed in a virtual screening workflow on a blinded dataset of novel chemical entities. Predictions from all five models were aggregated to generate a consensus pEC50 estimation, thereby prioritizing the most promising candidates for subsequent in vitro biological evaluation.
